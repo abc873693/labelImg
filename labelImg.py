@@ -70,7 +70,7 @@ class WindowMixin(object):
 class MainWindow(QMainWindow, WindowMixin):
     FIT_WINDOW, FIT_WIDTH, MANUAL_ZOOM = list(range(3))
 
-    def __init__(self, defaultFilename=None, defaultPrefdefClassFile=None, defaultSaveDir=None):
+    def __init__(self, defaultFilename=None, defaultPrefdefClassFile=None, defaultSaveDir='/Users/rainvisitor/Documents/GitHub/labelImg/data/'):
         super(MainWindow, self).__init__()
         self.setWindowTitle(__appname__)
 
@@ -132,10 +132,30 @@ class MainWindow(QMainWindow, WindowMixin):
         self.editButton = QToolButton()
         self.editButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
+        self.objectSizeTextLine = QLineEdit()
+        self.objectSizeTextLine.editingFinished.connect(self.editSizeFinished)
+        objectSizeQHBoxLayout = QHBoxLayout()
+        objectSizeQHBoxLayout.addWidget(QLabel('大小：'))
+        objectSizeQHBoxLayout.addWidget(self.objectSizeTextLine)
+        objectSizeQHBoxLayout.addWidget(QLabel('公分'))
+        objectSizeContainer = QWidget()
+        objectSizeContainer.setLayout(objectSizeQHBoxLayout)
+
+        self.objectDistanceTextLine = QLineEdit()
+        self.objectDistanceTextLine.editingFinished.connect(self.editDistanceFinished)
+        objectDistanceQHBoxLayout = QHBoxLayout()
+        objectDistanceQHBoxLayout.addWidget(QLabel('距離：'))
+        objectDistanceQHBoxLayout.addWidget(self.objectDistanceTextLine)
+        objectDistanceQHBoxLayout.addWidget(QLabel('公分'))
+        objectDistanceContainer = QWidget()
+        objectDistanceContainer.setLayout(objectDistanceQHBoxLayout)
+
         # Add some of widgets to listLayout
         listLayout.addWidget(self.editButton)
         listLayout.addWidget(self.diffcButton)
         listLayout.addWidget(useDefaultLabelContainer)
+        listLayout.addWidget(objectSizeContainer)
+        listLayout.addWidget(objectDistanceContainer)
 
         # Create and add combobox for showing unique labels in group 
         self.comboBox = ComboBox(self)
@@ -714,6 +734,50 @@ class MainWindow(QMainWindow, WindowMixin):
                 self.canvas.setShapeVisible(shape, item.checkState() == Qt.Checked)
         except:
             pass
+    
+    def editSizeFinished(self):
+        item = self.currentItem()
+
+        if self.objectSizeTextLine.text != '':
+            size = self.objectSizeTextLine.text()
+
+        try:
+            shape = self.itemsToShapes[item]
+        except:
+            pass
+        # Checked and Update
+        try:
+            size = float(size)
+            if size != shape.size:
+                shape.size = size
+                self.setDirty()
+            # else:  # User probably changed item visibility
+            #     self.canvas.setShapeVisible(shape, item.checkState() == Qt.Checked)
+        except:
+            shape.size = 0.0
+            self.setDirty()
+
+    def editDistanceFinished(self):
+        item = self.currentItem()
+
+        if self.objectDistanceTextLine.text != '':
+            distance = self.objectDistanceTextLine.text()
+
+        try:
+            shape = self.itemsToShapes[item]
+        except:
+            pass
+        # Checked and Update
+        try:
+            distance = float(distance)
+            if distance != shape.distance:
+                shape.distance = distance
+                self.setDirty()
+            # else:  # User probably changed item visibility
+            #     self.canvas.setShapeVisible(shape, item.checkState() == Qt.Checked)
+        except:
+            shape.distance = 0.0
+            self.setDirty()
 
     # React to canvas signals.
     def shapeSelectionChanged(self, selected=False):
@@ -756,7 +820,7 @@ class MainWindow(QMainWindow, WindowMixin):
 
     def loadLabels(self, shapes):
         s = []
-        for label, points, line_color, fill_color, difficult in shapes:
+        for label, points, line_color, fill_color, size, distance, difficult in shapes:
             shape = Shape(label=label)
             for x, y in points:
 
@@ -767,6 +831,8 @@ class MainWindow(QMainWindow, WindowMixin):
 
                 shape.addPoint(QPointF(x, y))
             shape.difficult = difficult
+            shape.size = size
+            shape.distance = distance
             shape.close()
             s.append(shape)
 
@@ -781,6 +847,8 @@ class MainWindow(QMainWindow, WindowMixin):
                 shape.fill_color = generateColorByText(label)
 
             self.addLabel(shape)
+            self.objectSizeTextLine.setText(str(size))
+            self.objectDistanceTextLine.setText(str(distance))
         self.updateComboBox()
         self.canvas.loadShapes(s)
 
@@ -807,7 +875,9 @@ class MainWindow(QMainWindow, WindowMixin):
                         fill_color=s.fill_color.getRgb(),
                         points=[(p.x(), p.y()) for p in s.points],
                        # add chris
-                        difficult = s.difficult)
+                        difficult = s.difficult,
+                        size = s.size,
+                        distance = s.distance)
 
         shapes = [format_shape(shape) for shape in self.canvas.shapes]
         # Can add differrent annotation formats here
@@ -852,6 +922,8 @@ class MainWindow(QMainWindow, WindowMixin):
             self._noSelectionSlot = True
             self.canvas.selectShape(self.itemsToShapes[item])
             shape = self.itemsToShapes[item]
+            self.objectSizeTextLine.setText(str(shape.size))
+            self.objectDistanceTextLine.setText(str(shape.distance))
             # Add Chris
             self.diffcButton.setChecked(shape.difficult)
 
