@@ -738,6 +738,9 @@ class MainWindow(QMainWindow, WindowMixin):
     def editSizeFinished(self):
         item = self.currentItem()
 
+        if not item: # If not selected Item, take the first one
+            item = self.labelList.item(self.labelList.count()-1)
+
         if self.objectSizeTextLine.text != '':
             size = self.objectSizeTextLine.text()
 
@@ -754,11 +757,15 @@ class MainWindow(QMainWindow, WindowMixin):
             # else:  # User probably changed item visibility
             #     self.canvas.setShapeVisible(shape, item.checkState() == Qt.Checked)
         except:
-            shape.size = 0.0
-            self.setDirty()
+            if not shape:
+                shape.size = 0.0
+                self.setDirty()
 
     def editDistanceFinished(self):
         item = self.currentItem()
+
+        if not item: # If not selected Item, take the first one
+            item = self.labelList.item(self.labelList.count()-1)
 
         if self.objectDistanceTextLine.text != '':
             distance = self.objectDistanceTextLine.text()
@@ -776,8 +783,9 @@ class MainWindow(QMainWindow, WindowMixin):
             # else:  # User probably changed item visibility
             #     self.canvas.setShapeVisible(shape, item.checkState() == Qt.Checked)
         except:
-            shape.distance = 0.0
-            self.setDirty()
+            if not shape:
+                shape.distance = 0.0
+                self.setDirty()
 
     # React to canvas signals.
     def shapeSelectionChanged(self, selected=False):
